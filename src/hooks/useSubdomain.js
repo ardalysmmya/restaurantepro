@@ -8,14 +8,15 @@ export function useSubdomain() {
 
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
+  const searchParams =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+  const simulated = searchParams.get('app');
+  if (simulated === 'admin') return SUBDOMAIN_TYPES.ADMIN;
+  if (simulated === 'corporate') return SUBDOMAIN_TYPES.CORPORATE;
+
   if (isLocalhost) {
-    const searchParams =
-      typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search)
-        : new URLSearchParams();
-    const simulated = searchParams.get('app');
-    if (simulated === 'admin') return SUBDOMAIN_TYPES.ADMIN;
-    if (simulated === 'corporate') return SUBDOMAIN_TYPES.CORPORATE;
     return SUBDOMAIN_TYPES.RESTAURANT;
   }
 
