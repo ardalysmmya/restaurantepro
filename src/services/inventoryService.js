@@ -1,18 +1,27 @@
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/useAuthStore';
+
+const getRealId = (idOrSlug) => {
+  const { restaurants } = useAuthStore.getState();
+  const found = restaurants.find((r) => r.slug === idOrSlug || r.id === idOrSlug);
+  return found ? found.id : idOrSlug;
+};
 
 export const inventoryService = {
   getIngredients: (restaurantId) =>
-    supabase.from('ingredients').select('*').eq('restaurant_id', restaurantId).order('name'),
+    supabase.from('ingredients').select('*').eq('restaurant_id', getRealId(restaurantId)).order('name'),
 
-  upsertIngredient: (ingredient) =>
-    supabase.from('ingredients').upsert(ingredient).select().single(),
+  upsertIngredient: (ingredient) => {
+    const realId = getRealId(ingredient.restaurant_id);
+    return supabase.from('ingredients').upsert({ ...ingredient, restaurant_id: realId }).select().single();
+  },
 
   deleteIngredient: (id) =>
     supabase.from('ingredients').delete().eq('id', id),
 
   adjustStock: (restaurantId, ingredientId, qtyChange, notes = '') =>
     supabase.from('inventory_movements').insert({
-      restaurant_id: restaurantId,
+      restaurant_id: getRealId(restaurantId),
       ingredient_id: ingredientId,
       qty_change: qtyChange,
       type: 'manual',
@@ -25,7 +34,7 @@ export const inventoryService = {
     return supabase
       .from('inventory_movements')
       .select('*, ingredient:ingredients(name, unit)')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', getRealId(restaurantId))
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
   },
@@ -34,7 +43,7 @@ export const inventoryService = {
     supabase
       .from('ingredients')
       .select('*')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', getRealId(restaurantId))
       .lt('stock_qty', supabase.raw('min_stock'))
       .gt('stock_qty', 0),
 };

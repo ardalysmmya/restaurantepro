@@ -47,10 +47,27 @@ export const useAuthStore = create((set, get) => ({
   },
 
   loadRestaurants: async (userId) => {
-    const { data: owned } = await supabase
+    let { data: owned } = await supabase
       .from('restaurants')
       .select('*')
       .eq('owner_id', userId);
+
+    if (owned && owned.length === 0) {
+      const mockStores = [
+        { slug: 'la-maison', name: 'La Maison', owner_id: userId, currency: 'EUR' },
+        { slug: 'el-asador', name: 'El Asador Prime', owner_id: userId, currency: 'EUR' },
+        { slug: 'sakura-bar', name: 'Sakura Bar', owner_id: userId, currency: 'EUR' },
+        { slug: 'la-terraza', name: 'La Terraza', owner_id: userId, currency: 'EUR' },
+      ];
+      const { data: inserted, error } = await supabase
+        .from('restaurants')
+        .insert(mockStores)
+        .select();
+      if (!error && inserted) {
+        owned = inserted;
+      }
+    }
+
     const { data: staff } = await supabase
       .from('restaurant_staff')
       .select('restaurant:restaurants(*), role')

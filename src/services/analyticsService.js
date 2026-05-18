@@ -1,4 +1,11 @@
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/useAuthStore';
+
+const getRealId = (idOrSlug) => {
+  const { restaurants } = useAuthStore.getState();
+  const found = restaurants.find((r) => r.slug === idOrSlug || r.id === idOrSlug);
+  return found ? found.id : idOrSlug;
+};
 
 export const analyticsService = {
   getDailyRevenue: async (restaurantId, days = 30) => {
@@ -7,7 +14,7 @@ export const analyticsService = {
     const { data, error } = await supabase
       .from('orders')
       .select('total, created_at')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', getRealId(restaurantId))
       .eq('status', 'delivered')
       .gte('created_at', since.toISOString())
       .order('created_at');
@@ -16,16 +23,16 @@ export const analyticsService = {
   },
 
   getTopDishes: (restaurantId, limit = 10) =>
-    supabase.rpc('get_top_dishes', { p_restaurant_id: restaurantId, p_limit: limit }),
+    supabase.rpc('get_top_dishes', { p_restaurant_id: getRealId(restaurantId), p_limit: limit }),
 
   getPeakHours: (restaurantId) =>
-    supabase.rpc('get_peak_hours', { p_restaurant_id: restaurantId }),
+    supabase.rpc('get_peak_hours', { p_restaurant_id: getRealId(restaurantId) }),
 
   getProfitMargins: (restaurantId) =>
-    supabase.rpc('get_profit_margins', { p_restaurant_id: restaurantId }),
+    supabase.rpc('get_profit_margins', { p_restaurant_id: getRealId(restaurantId) }),
 
   getKpis: (restaurantId) =>
-    supabase.rpc('get_restaurant_kpis', { p_restaurant_id: restaurantId }),
+    supabase.rpc('get_restaurant_kpis', { p_restaurant_id: getRealId(restaurantId) }),
 
   getRevenueByDay: (restaurantId, days = 7) => {
     const since = new Date();
@@ -33,7 +40,7 @@ export const analyticsService = {
     return supabase
       .from('orders')
       .select('total, created_at')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', getRealId(restaurantId))
       .eq('status', 'delivered')
       .gte('created_at', since.toISOString())
       .order('created_at');
@@ -43,7 +50,7 @@ export const analyticsService = {
     supabase
       .from('orders')
       .select('created_at')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', getRealId(restaurantId))
       .gte('created_at', `${date}T00:00:00`)
       .lt('created_at', `${date}T23:59:59`),
 };

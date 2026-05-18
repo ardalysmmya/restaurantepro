@@ -1,4 +1,11 @@
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/useAuthStore';
+
+const getRealId = (idOrSlug) => {
+  const { restaurants } = useAuthStore.getState();
+  const found = restaurants.find((r) => r.slug === idOrSlug || r.id === idOrSlug);
+  return found ? found.id : idOrSlug;
+};
 
 const rpc = async (fn, args = {}) => {
   const { data, error } = await supabase.rpc(fn, args);
@@ -8,16 +15,20 @@ const rpc = async (fn, args = {}) => {
 
 export const menuService = {
   getCategories: (restaurantId) =>
-    supabase.from('menu_categories').select('*').eq('restaurant_id', restaurantId).order('sort_order'),
+    supabase.from('menu_categories').select('*').eq('restaurant_id', getRealId(restaurantId)).order('sort_order'),
 
-  createCategory: (category) =>
-    supabase.from('menu_categories').insert(category).select().single(),
+  createCategory: (category) => {
+    const realId = getRealId(category.restaurant_id);
+    return supabase.from('menu_categories').insert({ ...category, restaurant_id: realId }).select().single();
+  },
 
   getDishes: (restaurantId) =>
-    supabase.from('dishes').select('*, category:menu_categories(name)').eq('restaurant_id', restaurantId).order('name'),
+    supabase.from('dishes').select('*, category:menu_categories(name)').eq('restaurant_id', getRealId(restaurantId)).order('name'),
 
-  upsertDish: (dish) =>
-    supabase.from('dishes').upsert(dish).select().single(),
+  upsertDish: (dish) => {
+    const realId = getRealId(dish.restaurant_id);
+    return supabase.from('dishes').upsert({ ...dish, restaurant_id: realId }).select().single();
+  },
 
   deleteDish: (id) =>
     supabase.from('dishes').delete().eq('id', id),
