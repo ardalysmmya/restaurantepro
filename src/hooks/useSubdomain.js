@@ -16,6 +16,12 @@ export function useSubdomain() {
   if (simulated === 'admin') return SUBDOMAIN_TYPES.ADMIN;
   if (simulated === 'corporate') return SUBDOMAIN_TYPES.CORPORATE;
 
+  // Auto-detect admin paths to prevent blank screens on redirect or direct link access
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (pathname.startsWith('/store') || pathname.startsWith('/auth')) {
+    return SUBDOMAIN_TYPES.ADMIN;
+  }
+
   if (isLocalhost) {
     return SUBDOMAIN_TYPES.RESTAURANT;
   }
