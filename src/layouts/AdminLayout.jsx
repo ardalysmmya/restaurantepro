@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { NAV_ITEMS } from '../lib/constants';
 import { cn } from '../lib/utils';
+import { useAuthStore } from '../stores/useAuthStore';
 
 const iconMap = {
   LayoutDashboard, UtensilsCrossed, ChefHat, Calculator, Users, QrCode, BarChart3,
@@ -28,6 +29,18 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+  const { restaurants, loading } = useAuthStore();
+
+  if (loading || !restaurants || restaurants.length === 0) {
+    return (
+      <div className="min-h-screen bg-premium-dark flex items-center justify-center noise-bg">
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-white/30 text-sm">Cargando restaurantes...</p>
+        </div>
+      </div>
+    );
+  }
 
   const currentStore = STORE_LIST.find((s) => s.id === storeId) || STORE_LIST[0];
   const buildPath = (href) => `/store/${storeId}/${href}`;

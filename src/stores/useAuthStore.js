@@ -27,9 +27,10 @@ export const useAuthStore = create((set, get) => ({
 
     onAuthChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        set({ session, user: session.user });
+        set({ loading: true, session, user: session.user });
         await get().loadProfile(session.user.id);
         await get().loadRestaurants(session.user.id);
+        set({ loading: false });
       }
       if (event === 'SIGNED_OUT') {
         set({ user: null, session: null, profile: null, restaurants: [], activeRestaurantId: null });
