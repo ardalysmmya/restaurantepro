@@ -123,7 +123,7 @@ export default function InventoryPage() {
                 <th className="text-left p-4 text-xs uppercase text-white/30">Ingrediente</th>
                 <th className="text-right p-4 text-xs uppercase text-white/30">Stock</th>
                 <th className="text-right p-4 text-xs uppercase text-white/30">Mínimo</th>
-                <th className="text-right p-4 text-xs uppercase text-white/30">Costo/u</th>
+                <th className="text-right p-4 text-xs uppercase text-white/30">Precio/u</th>
                 <th className="text-right p-4 text-xs uppercase text-white/30">Valor</th>
                 <th className="text-center p-4 text-xs uppercase text-white/30">Ajuste</th>
               </tr>
@@ -190,17 +190,32 @@ export default function InventoryPage() {
                 <h3 className="font-display font-semibold">Nuevo Ingrediente</h3>
                 <button onClick={() => setShowNew(false)} className="p-1 text-white/30 hover:text-white"><X size={16} /></button>
               </div>
-              <div className="space-y-3">
-                <input value={newIngredient.name} onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })} placeholder="Nombre" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white" />
-                <div className="grid grid-cols-2 gap-3">
-                  <input value={newIngredient.unit} onChange={(e) => setNewIngredient({ ...newIngredient, unit: e.target.value })} placeholder="Unidad (g, kg, pz)" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white" />
-                  <input type="number" value={newIngredient.cost_per_unit} onChange={(e) => setNewIngredient({ ...newIngredient, cost_per_unit: +e.target.value })} placeholder="Costo por unidad" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white" />
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Nombre del Ingrediente</label>
+                  <input value={newIngredient.name} onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })} placeholder="Ej. Tomates, Harina..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="number" value={newIngredient.stock_qty} onChange={(e) => setNewIngredient({ ...newIngredient, stock_qty: +e.target.value })} placeholder="Stock inicial" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white" />
-                  <input type="number" value={newIngredient.min_stock} onChange={(e) => setNewIngredient({ ...newIngredient, min_stock: +e.target.value })} placeholder="Stock mínimo" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white" />
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Unidad (g, kg, pz...)</label>
+                    <input value={newIngredient.unit} onChange={(e) => setNewIngredient({ ...newIngredient, unit: e.target.value })} placeholder="Ej. g" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Precio / Costo Unitario</label>
+                    <input type="number" step="0.01" value={newIngredient.cost_per_unit} onChange={(e) => setNewIngredient({ ...newIngredient, cost_per_unit: +e.target.value })} placeholder="0.00" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
                 </div>
-                <button onClick={handleCreate} disabled={!newIngredient.name} className="w-full py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-30 rounded-xl text-sm font-medium">Guardar</button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Stock Inicial</label>
+                    <input type="number" value={newIngredient.stock_qty} onChange={(e) => setNewIngredient({ ...newIngredient, stock_qty: +e.target.value })} placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Stock Mínimo (Alerta)</label>
+                    <input type="number" value={newIngredient.min_stock} onChange={(e) => setNewIngredient({ ...newIngredient, min_stock: +e.target.value })} placeholder="5" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" />
+                  </div>
+                </div>
+                <button onClick={handleCreate} disabled={!newIngredient.name} className="w-full py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-30 rounded-xl text-sm font-medium transition-all">Guardar</button>
               </div>
             </motion.div>
           </motion.div>
