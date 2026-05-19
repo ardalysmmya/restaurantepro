@@ -107,10 +107,10 @@ export default function POSPage() {
   const handleSendToKitchen = async () => {
     try {
       for (const item of activeItems) {
-        await orderService.updateItemStatus(item.id, 'pending');
+        await orderService.updateItemStatus(item.id, 'cooking');
       }
-      await orderService.updateOrderStatus(activeOrder.id, 'pending');
-      toast.success('Enviado a cocina');
+      await orderService.updateOrderStatus(activeOrder.id, 'cooking');
+      toast.success('Enviado a cocina — KDS actualizado');
     } catch (e) {
       toast.error('Error al enviar');
     }

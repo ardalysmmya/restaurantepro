@@ -39,7 +39,14 @@ export const orderService = {
   },
 
   addItemToOrder: (item) =>
-    supabase.from('order_items').insert(item).select().single(),
+    supabase.from('order_items').upsert({
+      order_id: item.order_id,
+      dish_id: item.dish_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      status: item.status || 'pending',
+      notes: item.notes || '',
+    }, { onConflict: 'order_id, dish_id' }).select().single(),
 
   removeItemFromOrder: (itemId) =>
     supabase.from('order_items').delete().eq('id', itemId),

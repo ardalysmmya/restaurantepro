@@ -1,7 +1,22 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import GlassCard from '../../components/ui/GlassCard';
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 800));
+    toast.success('Mensaje enviado. Nos pondremos en contacto pronto.');
+    setForm({ name: '', email: '', message: '' });
+    setSending(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center section-padding pt-24">
       <div className="max-w-3xl w-full">
@@ -12,33 +27,31 @@ export default function ContactPage() {
           className="glass-card p-10 md:p-16"
         >
           <h1 className="font-display text-4xl font-bold mb-4">Contacto</h1>
-          <p className="text-white/40 mb-10">
-            Cuéntanos sobre tu restaurante y te mostraremos cómo podemos ayudarte.
-          </p>
+          <p className="text-white/40 mb-10">Cuéntanos sobre tu restaurante y te mostraremos cómo podemos ayudarte.</p>
 
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <input
-                type="text"
-                placeholder="Nombre"
+                type="text" placeholder="Nombre" value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })} required
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-500/50 transition-colors"
               />
               <input
-                type="email"
-                placeholder="Email"
+                type="email" placeholder="Email" value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })} required
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-500/50 transition-colors"
               />
             </div>
             <textarea
-              rows={5}
-              placeholder="Mensaje"
+              rows={5} placeholder="Mensaje" value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })} required
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-500/50 transition-colors resize-none"
             />
             <button
-              type="submit"
-              className="w-full py-3.5 bg-brand-500 hover:bg-brand-400 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-[0_0_32px_rgba(238,122,18,0.4)]"
+              type="submit" disabled={sending}
+              className="w-full py-3.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-[0_0_32px_rgba(238,122,18,0.4)]"
             >
-              Enviar Mensaje
+              {sending ? 'Enviando...' : 'Enviar Mensaje'}
             </button>
           </form>
 

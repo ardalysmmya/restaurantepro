@@ -10,17 +10,20 @@ import {
 import { NAV_ITEMS } from '../lib/constants';
 import { cn } from '../lib/utils';
 import { useAuthStore } from '../stores/useAuthStore';
+import { toast } from 'sonner';
 
 const iconMap = {
   LayoutDashboard, UtensilsCrossed, ChefHat, Calculator, Users, QrCode, BarChart3,
   Package, TrendingUp,
 };
 
-const STORE_LIST = [
-  { id: 'la-maison', name: 'La Maison', type: 'Fine Dining', color: 'from-brand-400 to-brand-600' },
-  { id: 'el-asador', name: 'El Asador Prime', type: 'Steakhouse', color: 'from-amber-400 to-red-600' },
-  { id: 'sakura-bar', name: 'Sakura Bar', type: 'Nikkei Fusion', color: 'from-pink-400 to-purple-600' },
-  { id: 'la-terraza', name: 'La Terraza', type: 'Mediterráneo', color: 'from-emerald-400 to-teal-600' },
+const STORE_COLORS = [
+  'from-brand-400 to-brand-600',
+  'from-amber-400 to-red-600',
+  'from-pink-400 to-purple-600',
+  'from-emerald-400 to-teal-600',
+  'from-cyan-400 to-blue-600',
+  'from-violet-400 to-indigo-600',
 ];
 
 export default function AdminLayout() {
@@ -29,21 +32,14 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
-  const { restaurants, loading } = useAuthStore();
+  const { restaurants, user, logout } = useAuthStore();
 
-  if (loading || !restaurants || restaurants.length === 0) {
-    return (
-      <div className="min-h-screen bg-premium-dark flex items-center justify-center noise-bg">
-        <div className="text-center space-y-4">
-          <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-white/30 text-sm">Cargando restaurantes...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const currentStore = STORE_LIST.find((s) => s.id === storeId) || STORE_LIST[0];
+  const storeList = restaurants || [];
+  const currentStore = storeList.find((s) => (s.slug || s.id) === storeId) || storeList[0] || { name: '—', slug: storeId };
   const buildPath = (href) => `/store/${storeId}/${href}`;
+  const userInitials = user?.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() || '?';
 
   return (
     <div className="flex h-screen overflow-hidden bg-premium-dark noise-bg">
@@ -79,19 +75,19 @@ export default function AdminLayout() {
                 : 'p-2.5 hover:bg-white/[0.03]'
             )}
           >
-            <div className={cn(
-              'w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center font-display font-bold text-xs shrink-0',
-              currentStore.color
-            )}>
-              {currentStore.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-            </div>
+              <div className={cn(
+                'w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center font-display font-bold text-xs shrink-0',
+                STORE_COLORS[storeList.indexOf(currentStore) % STORE_COLORS.length]
+              )}>
+                {(currentStore.name || currentStore.slug || '?').split(' ').map((n) => n[0]).join('').slice(0, 2)}
+              </div>
 
-            {!collapsed && (
-              <>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium truncate">{currentStore.name}</p>
-                  <p className="text-[10px] text-white/30 truncate">{currentStore.type}</p>
-                </div>
+              {!collapsed && (
+                <>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium truncate">{currentStore.name || currentStore.slug}</p>
+                    <p className="text-[10px] text-white/30 truncate">{currentStore.plan || 'Activo'}</p>
+                  </div>
                 <ChevronDown
                   size={14}
                   className={cn(
@@ -113,28 +109,27 @@ export default function AdminLayout() {
                 className="overflow-hidden"
               >
                 <div className="pt-2 space-y-1">
-                  {STORE_LIST.map((store) => (
+                  {storeList.map((store, i) => (
                     <button
                       key={store.id}
                       onClick={() => {
-                        navigate(`/store/${store.id}/dashboard`);
+                        navigate(`/store/${store.slug || store.id}/dashboard`);
                         setStoreDropdownOpen(false);
                       }}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                        store.id === storeId
+                        (store.slug || store.id) === storeId
                           ? 'bg-brand-500/10 text-brand-400'
                           : 'text-white/40 hover:text-white hover:bg-white/[0.03]'
-                      )}
-                    >
+                      )}>
                       <div className={cn(
                         'w-7 h-7 rounded-lg bg-gradient-to-br flex items-center justify-center font-display font-bold text-[10px]',
-                        store.color
+                        STORE_COLORS[i % STORE_COLORS.length]
                       )}>
-                        {store.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                        {(store.name || store.slug || '?').split(' ').map((n) => n[0]).join('').slice(0, 2)}
                       </div>
-                      <span className="flex-1 text-left truncate">{store.name}</span>
-                      {store.id === storeId && <Check size={14} className="text-brand-400 shrink-0" />}
+                      <span className="flex-1 text-left truncate">{store.name || store.slug}</span>
+                      {(store.slug || store.id) === storeId && <Check size={14} className="text-brand-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -214,7 +209,10 @@ export default function AdminLayout() {
                 <Building2 size={16} />
                 <span>Mis Restaurantes</span>
               </button>
-              <button className="w-full flex items-center gap-3 text-white/30 hover:text-red-400 transition-colors text-sm px-3 py-2 rounded-lg hover:bg-white/[0.02]">
+              <button
+                onClick={async () => { await logout(); navigate('/auth/login'); }}
+                className="w-full flex items-center gap-3 text-white/30 hover:text-red-400 transition-colors text-sm px-3 py-2 rounded-lg hover:bg-white/[0.02]"
+              >
                 <LogOut size={16} />
                 <span>Salir</span>
               </button>
@@ -241,12 +239,14 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
-            <button className="relative p-2 rounded-lg hover:bg-white/5 transition-colors">
+            <button
+              onClick={() => toast.info('Notificaciones — próximamente')}
+              className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
               <Bell size={20} className="text-white/40" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full" />
             </button>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-xs font-bold">
-              JM
+              {userInitials}
             </div>
           </div>
         </header>

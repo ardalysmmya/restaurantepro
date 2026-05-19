@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import QRCode from 'qrcode';
 import {
-  QrCode, Plus, Image, Trash2, Smartphone, Upload, X, Save,
+  QrCode, Plus, Image, Trash2, Smartphone, Upload, X, Save, Pencil,
 } from 'lucide-react';
 import GlassCard from '../../../components/ui/GlassCard';
 import { ANIMATION_VARIANTS } from '../../../lib/constants';
@@ -168,13 +169,26 @@ export default function DigitalMenuPage() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
               className="glass-card p-8 text-center max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
               <div className="w-48 h-48 mx-auto bg-white rounded-xl p-3 mb-4">
-                <div className="w-full h-full bg-black rounded-lg flex items-center justify-center">
-                  <QrCode size={120} className="text-white" />
-                </div>
+                <canvas
+                  ref={(el) => { if (el) QRCode.toCanvas(el, `${window.location.origin}/menu/${storeId}`, { width: 160, margin: 1, color: { dark: '#000', light: '#fff' } }); }}
+                  className="w-full h-full rounded-lg"
+                />
               </div>
               <h3 className="font-display font-semibold text-lg mb-2">Menú QR</h3>
               <p className="text-white/40 text-sm mb-4">Escanea para ver el menú actualizado</p>
-              <button onClick={() => setShowQR(false)} className="w-full py-2.5 glass-card rounded-xl text-sm">Cerrar</button>
+              <div className="flex gap-2">
+                <button onClick={() => {
+                  const canvas = document.querySelector('canvas');
+                  if (canvas) {
+                    const a = document.createElement('a');
+                    a.href = canvas.toDataURL();
+                    a.download = `menu-qr-${storeId}.png`;
+                    a.click();
+                    toast.success('QR descargado');
+                  }
+                }} className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-400 rounded-xl text-sm font-medium">Descargar</button>
+                <button onClick={() => setShowQR(false)} className="flex-1 py-2.5 glass-card rounded-xl text-sm">Cerrar</button>
+              </div>
             </motion.div>
           </motion.div>
         )}

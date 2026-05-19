@@ -507,6 +507,99 @@ CREATE POLICY "tenant_isolation_campaign_redemptions" ON campaign_redemptions
     )
   ));
 
+-- ═══ CONSTRAINTS ═══
+ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_order_dish_unique;
+ALTER TABLE order_items ADD CONSTRAINT order_items_order_dish_unique UNIQUE (order_id, dish_id);
+
+-- ═══ STORED PROCEDURES ═══
+CREATE OR REPLACE FUNCTION recalculate_order_totals(p_order_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE orders SET
+    subtotal = COALESCE((SELECT SUM(unit_price * quantity) FROM order_items WHERE order_id = p_order_id), 0),
+    tax = COALESCE((SELECT SUM(unit_price * quantity) FROM order_items WHERE order_id = p_order_id), 0) * 0.16,
+    total = COALESCE((SELECT SUM(unit_price * quantity) FROM order_items WHERE order_id = p_order_id), 0) * 1.16,
+    updated_at = now()
+  WHERE id = p_order_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_top_dishes(p_restaurant_id UUID, p_limit INT DEFAULT 10)
+RETURNS TABLE(dish_id UUID, dish_name TEXT, total_sold BIGINT, total_revenue NUMERIC) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT d.id, d.name, SUM(oi.quantity)::BIGINT, SUM(oi.unit_price * oi.quantity)
+  FROM order_items oi
+  JOIN dishes d ON d.id = oi.dish_id
+  JOIN orders o ON o.id = oi.order_id
+  WHERE o.restaurant_id = p_restaurant_id AND o.status = 'delivered'
+  GROUP BY d.id, d.name
+  ORDER BY SUM(oi.quantity) DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_peak_hours(p_restaurant_id UUID)
+RETURNS TABLE(hour INT, order_count BIGINT) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT EXTRACT(HOUR FROM o.created_at)::INT, COUNT(*)::BIGINT
+  FROM orders o
+  WHERE o.restaurant_id = p_restaurant_id
+    AND o.created_at > NOW() - INTERVAL '30 days'
+  GROUP BY EXTRACT(HOUR FROM o.created_at)
+  ORDER BY hour;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_profit_margins(p_restaurant_id UUID)
+RETURNS TABLE(dish_id UUID, dish_name TEXT, price NUMERIC, cost NUMERIC, margin_pct NUMERIC, profit NUMERIC) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT d.id, d.name, d.price,
+    COALESCE((SELECT SUM(ri.qty_per_serv * i.cost_per_unit)
+     FROM recipe_ingredients ri
+     JOIN ingredients i ON i.id = ri.ingredient_id
+     JOIN recipes r ON r.id = ri.recipe_id
+     WHERE r.dish_id = d.id), 0) AS cost,
+    CASE WHEN d.price > 0
+      THEN ROUND(((d.price - COALESCE((SELECT SUM(ri.qty_per_serv * i.cost_per_unit)
+        FROM recipe_ingredients ri
+        JOIN ingredients i ON i.id = ri.ingredient_id
+        JOIN recipes r ON r.id = ri.recipe_id
+        WHERE r.dish_id = d.id), 0)) / d.price) * 100, 1)
+      ELSE 0 END AS margin_pct,
+    d.price - COALESCE((SELECT SUM(ri.qty_per_serv * i.cost_per_unit)
+     FROM recipe_ingredients ri
+     JOIN ingredients i ON i.id = ri.ingredient_id
+     JOIN recipes r ON r.id = ri.recipe_id
+     WHERE r.dish_id = d.id), 0) AS profit
+  FROM dishes d
+  WHERE d.restaurant_id = p_restaurant_id
+  ORDER BY margin_pct DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_restaurant_kpis(p_restaurant_id UUID)
+RETURNS TABLE(
+  today_revenue NUMERIC, today_orders BIGINT, today_diners BIGINT,
+  avg_ticket NUMERIC, active_orders BIGINT, pending_orders BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COALESCE((SELECT SUM(total) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE), 0),
+    COALESCE((SELECT COUNT(*) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE), 0),
+    COALESCE((SELECT COUNT(DISTINCT diner_id) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE AND diner_id IS NOT NULL), 0),
+    CASE WHEN (SELECT COUNT(*) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE) > 0
+      THEN (SELECT SUM(total) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE) /
+           (SELECT COUNT(*) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'delivered' AND created_at::DATE = CURRENT_DATE)
+      ELSE 0 END,
+    COALESCE((SELECT COUNT(*) FROM orders WHERE restaurant_id = p_restaurant_id AND status IN ('pending','cooking')), 0),
+    COALESCE((SELECT COUNT(*) FROM orders WHERE restaurant_id = p_restaurant_id AND status = 'pending'), 0);
+END;
+$$ LANGUAGE plpgsql;
+
 -- ═══ ÍNDICES ═══
 CREATE INDEX IF NOT EXISTS idx_restaurants_slug ON restaurants(slug);
 CREATE INDEX IF NOT EXISTS idx_restaurants_owner ON restaurants(owner_id);
