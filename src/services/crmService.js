@@ -3,7 +3,10 @@ import { useAuthStore } from '../stores/useAuthStore';
 
 const getRealId = (idOrSlug) => {
   const { restaurants } = useAuthStore.getState();
-  const found = restaurants.find((r) => r.slug === idOrSlug || r.id === idOrSlug);
+  let found = restaurants.find((r) => r.slug === idOrSlug || r.id === idOrSlug);
+  if (!found) {
+    found = restaurants.find((r) => r.slug && r.slug.startsWith(idOrSlug));
+  }
   return found ? found.id : idOrSlug;
 };
 

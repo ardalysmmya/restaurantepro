@@ -54,11 +54,12 @@ export const useAuthStore = create((set, get) => ({
       .eq('owner_id', userId);
 
     if (owned && owned.length === 0) {
+      const suffix = userId.slice(0, 8);
       const mockStores = [
-        { slug: 'la-maison', name: 'La Maison', owner_id: userId, currency: 'EUR' },
-        { slug: 'el-asador', name: 'El Asador Prime', owner_id: userId, currency: 'EUR' },
-        { slug: 'sakura-bar', name: 'Sakura Bar', owner_id: userId, currency: 'EUR' },
-        { slug: 'la-terraza', name: 'La Terraza', owner_id: userId, currency: 'EUR' },
+        { slug: `la-maison-${suffix}`, name: 'La Maison', owner_id: userId, currency: 'EUR' },
+        { slug: `el-asador-${suffix}`, name: 'El Asador Prime', owner_id: userId, currency: 'EUR' },
+        { slug: `sakura-bar-${suffix}`, name: 'Sakura Bar', owner_id: userId, currency: 'EUR' },
+        { slug: `la-terraza-${suffix}`, name: 'La Terraza', owner_id: userId, currency: 'EUR' },
       ];
       const { data: inserted, error } = await supabase
         .from('restaurants')
